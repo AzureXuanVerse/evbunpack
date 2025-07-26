@@ -26,15 +26,23 @@ def write_bytes(
     bytes_read = 0
     bytes_wrote = 0
     inital_offset = fd.tell()
+    stat_mxlen = 0
     while bytes_read < size:
-        sys.stderr.write("%s: total=%8xh read=%8xh\r" % (desc, size, bytes_read))
+        stat = "%s: %.2f%% total=%8xh read=%8xh \r" % (
+            desc,
+            100 * bytes_read / size,
+            size,
+            bytes_read,
+        )
+        stat_mxlen = max(stat_mxlen, len(stat))
+        sys.stderr.write(stat)
         chunk_size = next(chunk_sizes) if chunk_sizes else default_chunksize
         size_to_read = min(chunk_size, size - (fd.tell() - inital_offset))
         chunk = fd.read(size_to_read)
         bytes_read += len(chunk)
         chunk = chunk if not chunk_process else chunk_process(chunk)
         bytes_wrote += out_fd.write(chunk)
-    sys.stderr.write("\n")
+    sys.stderr.write(" " * stat_mxlen + "\r")
     return bytes_wrote
 
 
@@ -378,15 +386,11 @@ def restore_pe(input_file: str, output_file: str, pe_variant: str):
 
 
 def search_for_magic(fd, size, magic):
-    CHUNKSIZE = 16 * 2**20  # 16MB
-    for i in range(0, size, CHUNKSIZE):
-        with mmap(
-            fd.fileno(), offset=i, length=min(CHUNKSIZE, size - i), access=ACCESS_READ
-        ) as mm:
-            result = mm.find(magic)
-            if result >= 0:
-                logger.debug("Found magic at %xh" % result)
-                return result
+    with mmap(fd.fileno(), offset=0, length=size, access=ACCESS_READ) as mm:
+        result = mm.find(magic)
+        if result >= 0:
+            logger.debug("Found magic at %xh" % result)
+            return result
     return -1
 
 
