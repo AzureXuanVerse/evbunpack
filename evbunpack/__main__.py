@@ -5,7 +5,7 @@ import struct, os, array, sys, logging
 from argparse import ArgumentParser
 from mmap import mmap, ACCESS_READ
 from io import BytesIO
-from evbunpack.aplib import decompress
+from aplib import decompress
 from evbunpack.const import *
 from evbunpack import __version__
 
